@@ -15,24 +15,24 @@ typedef struct {
     Vector2 dir;
     bool alive;
 } Projectile;
-float proj_speed = 300;
+float proj_speed = 234;
 
 Vector2 player = { 0, 0 };
-int player_speed = 500;
+int player_speed = 345;
 
 Object *objects = NULL;
-int obj_count = 300, obj_count_display;
-float obj_radius = 8.0f;
+int obj_count = 456, obj_count_display;
+float obj_radius = 7.0f;
 
 Projectile *projectiles = NULL;
 int proj_count = 0;
-float proj_radius = 4.0f;
+float proj_radius = 3.0f;
 int split_proj_count = 3;
 
 void init_obj(int width, int height) {
     objects = malloc(sizeof(Object) * obj_count);
     if (objects == NULL) {
-        printf("alloc fail");
+        printf("alloc failed\n");
         exit(-1);
     }
 
@@ -46,7 +46,7 @@ void init_obj(int width, int height) {
 void shoot_projectile(Vector2 from, Vector2 to) {
     Projectile *temp = realloc(projectiles, sizeof(Projectile) * (proj_count + 1));
     if (temp == NULL) {
-        printf("realloc fail");
+        printf("realloc failed\n");
         free(projectiles);
         exit(-1);
     }
@@ -107,7 +107,7 @@ void cleanup_projectiles() {
     if (alive_count != proj_count) {
         Projectile *temp = realloc(projectiles, sizeof(Projectile) * alive_count);
         if (temp == NULL && alive_count > 0) {
-            printf("Cleanup realloc failed\n");
+            printf("cleanup realloc failed\n");
             return;
         }
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
                 if (objects[i].alive) DrawCircleV(objects[i].pos, obj_radius, WHITE);
             }
 
-            DrawCircleV(player, 12, PINK);
+            DrawCircleV(player, 7, PINK);
 
             for (int i = 0; i < proj_count; i++) {
                 if (projectiles[i].alive) DrawCircleV(projectiles[i].pos, proj_radius, RED);
