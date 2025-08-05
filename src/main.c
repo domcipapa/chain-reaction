@@ -18,31 +18,31 @@ typedef struct {
 
 // player
 Vector2 player = { 0, 0 };
-const int player_speed = 345;
+#define PLAYER_SPEED 345
 
 // object
 Object *objects = NULL;
 
-const int obj_count = 456;
-const int obj_radius = 7;
+#define OBJ_COUNT 456
+#define OBJ_RADIUS 7
 
 // projectile
 Projectile *projectiles = NULL;
 
-const int proj_speed = 234;
-const int proj_radius = 3;
-const int split_proj_count = 3;
+#define PROJ_SPEED 234
+#define PROJ_RADIUS 3
+#define SPLIT_PROJ_COUNT 3
 
 // functions
 void init_obj(int width, int height) {
-    objects = malloc(sizeof(Object) * obj_count);
+    objects = malloc(sizeof(Object) * OBJ_COUNT);
     if (objects == NULL) {
         printf("alloc failed\n");
 
         exit(-1);
     }
 
-    for (int i = 0; i < obj_count; i++) {
+    for (int i = 0; i < OBJ_COUNT; i++) {
         objects[i].pos.x = rand() % width;
         objects[i].pos.y = rand() % height;
 
@@ -70,7 +70,7 @@ void shoot_projectile(Vector2 from, Vector2 to, int *proj_count) {
 void update_projectiles(float dt, int proj_count) {
     for (int i = 0; i < proj_count; i++) {
         if (!projectiles[i].alive) continue;
-        projectiles[i].pos = Vector2Add(projectiles[i].pos, Vector2Scale(projectiles[i].dir, proj_speed * dt));
+        projectiles[i].pos = Vector2Add(projectiles[i].pos, Vector2Scale(projectiles[i].dir, PROJ_SPEED * dt));
 
         Vector2 pos = projectiles[i].pos;
         if (pos.x < 0 || pos.x > GetScreenWidth() || pos.y < 0 || pos.y > GetScreenHeight()) {
@@ -80,12 +80,12 @@ void update_projectiles(float dt, int proj_count) {
 }
 
 void check_coll(int *proj_count, int *obj_count_display) {
-    float combined_radius = obj_radius + proj_radius;
+    float combined_radius = OBJ_RADIUS + PROJ_RADIUS;
 
     for (int i = 0; i < *proj_count; i++) {
         if (!projectiles[i].alive) continue;
 
-        for (int j = 0; j < obj_count; j++) {
+        for (int j = 0; j < OBJ_COUNT; j++) {
             if (!objects[j].alive) continue;
 
             float dist = Vector2Distance(projectiles[i].pos, objects[j].pos);
@@ -95,7 +95,7 @@ void check_coll(int *proj_count, int *obj_count_display) {
 
                 (*obj_count_display)--;
 
-                for (int k = 0; k < split_proj_count; k++) {
+                for (int k = 0; k < SPLIT_PROJ_COUNT; k++) {
                     float angle = ((float) rand() / RAND_MAX) * 2 * PI;
                     Vector2 dir = { cosf(angle), sinf(angle) };
 
@@ -128,7 +128,7 @@ void cleanup_projectiles(int *proj_count) {
 }
 
 int main(int argc, char **argv) {
-    int obj_count_display = obj_count;
+    int obj_count_display = OBJ_COUNT;
     int proj_count = 0;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -140,10 +140,10 @@ int main(int argc, char **argv) {
     while (!WindowShouldClose()) {
         float delta_time = GetFrameTime();
 
-        if (IsKeyDown(KEY_W)) player.y -= player_speed * delta_time;
-        if (IsKeyDown(KEY_A)) player.x -= player_speed * delta_time;
-        if (IsKeyDown(KEY_S)) player.y += player_speed * delta_time;
-        if (IsKeyDown(KEY_D)) player.x += player_speed * delta_time;
+        if (IsKeyDown(KEY_W)) player.y -= PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_A)) player.x -= PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_S)) player.y += PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_D)) player.x += PLAYER_SPEED * delta_time;
 
         if (IsKeyPressed(KEY_G)) {
             proj_count = 0;
@@ -153,14 +153,14 @@ int main(int argc, char **argv) {
             free(objects);
             init_obj(GetRenderWidth(), GetRenderHeight());
 
-            obj_count_display = obj_count;
+            obj_count_display = OBJ_COUNT;
         }
 
         if (IsKeyDown(KEY_R)) {
             free(objects);
             init_obj(GetRenderWidth(), GetRenderHeight());
 
-            obj_count_display = obj_count;
+            obj_count_display = OBJ_COUNT;
         }
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
@@ -174,14 +174,14 @@ int main(int argc, char **argv) {
         BeginDrawing(); {
             ClearBackground(BLACK);
 
-            for (int i = 0; i < obj_count; i++) {
-                if (objects[i].alive) DrawCircleV(objects[i].pos, obj_radius, WHITE);
+            for (int i = 0; i < OBJ_COUNT; i++) {
+                if (objects[i].alive) DrawCircleV(objects[i].pos, OBJ_RADIUS, WHITE);
             }
 
             DrawCircleV(player, 7, PINK);
 
             for (int i = 0; i < proj_count; i++) {
-                if (projectiles[i].alive) DrawCircleV(projectiles[i].pos, proj_radius, RED);
+                if (projectiles[i].alive) DrawCircleV(projectiles[i].pos, PROJ_RADIUS, RED);
             }
 
             DrawFPS(10, 10);
