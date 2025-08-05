@@ -15,51 +15,59 @@ typedef struct {
     Vector2 dir;
     bool alive;
 } Projectile;
-float proj_speed = 234;
 
+// player
 Vector2 player = { 0, 0 };
-int player_speed = 345;
+const int player_speed = 345;
 
+// object
 Object *objects = NULL;
-int obj_count = 456, obj_count_display;
-float obj_radius = 7.0f;
 
+const int obj_count = 456;
+const int obj_radius = 7;
+
+// projectile
 Projectile *projectiles = NULL;
-int proj_count = 0;
-float proj_radius = 3.0f;
-int split_proj_count = 3;
 
+const int proj_speed = 234;
+const int proj_radius = 3;
+const int split_proj_count = 3;
+
+// functions
 void init_obj(int width, int height) {
     objects = malloc(sizeof(Object) * obj_count);
     if (objects == NULL) {
         printf("alloc failed\n");
+
         exit(-1);
     }
 
     for (int i = 0; i < obj_count; i++) {
         objects[i].pos.x = rand() % width;
         objects[i].pos.y = rand() % height;
+
         objects[i].alive = true;
     }
 }
 
-void shoot_projectile(Vector2 from, Vector2 to) {
-    Projectile *temp = realloc(projectiles, sizeof(Projectile) * (proj_count + 1));
+void shoot_projectile(Vector2 from, Vector2 to, int *proj_count) {
+    Projectile *temp = realloc(projectiles, sizeof(Projectile) * (*proj_count + 1));
     if (temp == NULL) {
         printf("realloc failed\n");
+
         free(projectiles);
         exit(-1);
     }
     projectiles = temp;
 
-    projectiles[proj_count].pos = from;
-    projectiles[proj_count].dir = Vector2Normalize(Vector2Subtract(to, from));
-    projectiles[proj_count].alive = true;
+    projectiles[*proj_count].pos = from;
+    projectiles[*proj_count].dir = Vector2Normalize(Vector2Subtract(to, from));
+    projectiles[*proj_count].alive = true;
 
-    proj_count++;
+    (*proj_count)++;
 }
 
-void update_projectiles(float dt) {
+void update_projectiles(float dt, int proj_count) {
     for (int i = 0; i < proj_count; i++) {
         if (!projectiles[i].alive) continue;
         projectiles[i].pos = Vector2Add(projectiles[i].pos, Vector2Scale(projectiles[i].dir, proj_speed * dt));
@@ -71,10 +79,10 @@ void update_projectiles(float dt) {
     }
 }
 
-void check_coll() {
+void check_coll(int *proj_count, int *obj_count_display) {
     float combined_radius = obj_radius + proj_radius;
 
-    for (int i = 0; i < proj_count; i++) {
+    for (int i = 0; i < *proj_count; i++) {
         if (!projectiles[i].alive) continue;
 
         for (int j = 0; j < obj_count; j++) {
@@ -84,12 +92,14 @@ void check_coll() {
             if (dist < combined_radius) {
                 projectiles[i].alive = false;
                 objects[j].alive = false;
-                obj_count_display--;
+
+                (*obj_count_display)--;
 
                 for (int k = 0; k < split_proj_count; k++) {
                     float angle = ((float) rand() / RAND_MAX) * 2 * PI;
                     Vector2 dir = { cosf(angle), sinf(angle) };
-                    shoot_projectile(objects[j].pos, Vector2Add(objects[j].pos, dir));
+
+                    shoot_projectile(objects[j].pos, Vector2Add(objects[j].pos, dir), proj_count);
                 }
                 break;
             }
@@ -97,33 +107,36 @@ void check_coll() {
     }
 }
 
-void cleanup_projectiles() {
+void cleanup_projectiles(int *proj_count) {
     int alive_count = 0;
 
-    for (int i = 0; i < proj_count; i++) {
+    for (int i = 0; i < *proj_count; i++) {
         if (projectiles[i].alive) projectiles[alive_count++] = projectiles[i];
     }
 
-    if (alive_count != proj_count) {
+    if (alive_count != *proj_count) {
         Projectile *temp = realloc(projectiles, sizeof(Projectile) * alive_count);
         if (temp == NULL && alive_count > 0) {
             printf("cleanup realloc failed\n");
+
             return;
         }
 
         projectiles = temp;
-        proj_count = alive_count;
+        *proj_count = alive_count;
     }
 }
 
 int main(int argc, char **argv) {
-    obj_count_display = obj_count;
+    int obj_count_display = obj_count;
+    int proj_count = 0;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1600, 800, "public static void main(String[] args)");
     SetTargetFPS(165);
 
     init_obj(GetRenderWidth(), GetRenderHeight());
+
     while (!WindowShouldClose()) {
         float delta_time = GetFrameTime();
 
@@ -139,26 +152,26 @@ int main(int argc, char **argv) {
 
             free(objects);
             init_obj(GetRenderWidth(), GetRenderHeight());
+
             obj_count_display = obj_count;
         }
 
         if (IsKeyDown(KEY_R)) {
             free(objects);
-
             init_obj(GetRenderWidth(), GetRenderHeight());
+
             obj_count_display = obj_count;
         }
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-            shoot_projectile(player, GetMousePosition());
+            shoot_projectile(player, GetMousePosition(), &proj_count);
         }
-        update_projectiles(delta_time);
 
-        check_coll();
-        cleanup_projectiles();
+        update_projectiles(delta_time, proj_count);
+        check_coll(&proj_count, &obj_count_display);
+        cleanup_projectiles(&proj_count);
 
         BeginDrawing(); {
-
             ClearBackground(BLACK);
 
             for (int i = 0; i < obj_count; i++) {
@@ -177,5 +190,9 @@ int main(int argc, char **argv) {
 
         } EndDrawing();
     }
+
+    free(projectiles);
+    free(objects);
+    CloseWindow();
     return 0;
 }
