@@ -5,6 +5,12 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#define WINDOW_WIDTH 1600
+#define WINDOW_HEIGHT 900
+#define WINDOW_TITLE "public static void main(String[] args)"
+
+#define TARGET_FPS 165
+
 typedef struct {
     Vector2 pos;
     bool alive;
@@ -18,20 +24,22 @@ typedef struct {
 
 // player
 Vector2 player = { 0, 0 };
-#define PLAYER_SPEED 345
+#define PLAYER_SPEED 512
+#define PLAYER_RADIUS 7
 
 // object
 Object *objects = NULL;
 
-#define OBJ_COUNT 456
+#define OBJ_COUNT 512
 #define OBJ_RADIUS 7
 
 // projectile
 Projectile *projectiles = NULL;
 
-#define PROJ_SPEED 234
+// #define PROJ_SPEED 1024
+int proj_speed = 300;
 #define PROJ_RADIUS 3
-#define SPLIT_PROJ_COUNT 3
+#define SPLIT_PROJ_COUNT 16
 
 // functions
 void init_obj(int width, int height) {
@@ -70,7 +78,7 @@ void shoot_projectile(Vector2 from, Vector2 to, int *proj_count) {
 void update_projectiles(float dt, int proj_count) {
     for (int i = 0; i < proj_count; i++) {
         if (!projectiles[i].alive) continue;
-        projectiles[i].pos = Vector2Add(projectiles[i].pos, Vector2Scale(projectiles[i].dir, PROJ_SPEED * dt));
+        projectiles[i].pos = Vector2Add(projectiles[i].pos, Vector2Scale(projectiles[i].dir, proj_speed * dt));
 
         Vector2 pos = projectiles[i].pos;
         if (pos.x < 0 || pos.x > GetScreenWidth() || pos.y < 0 || pos.y > GetScreenHeight()) {
@@ -132,18 +140,18 @@ int main(int argc, char **argv) {
     int proj_count = 0;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1600, 800, "public static void main(String[] args)");
-    SetTargetFPS(165);
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
+    SetTargetFPS(TARGET_FPS);
 
     init_obj(GetRenderWidth(), GetRenderHeight());
 
     while (!WindowShouldClose()) {
         float delta_time = GetFrameTime();
 
-        if (IsKeyDown(KEY_W)) player.y -= PLAYER_SPEED * delta_time;
-        if (IsKeyDown(KEY_A)) player.x -= PLAYER_SPEED * delta_time;
-        if (IsKeyDown(KEY_S)) player.y += PLAYER_SPEED * delta_time;
-        if (IsKeyDown(KEY_D)) player.x += PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_W) && player.y - PLAYER_RADIUS > 1) player.y -= PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_A) && player.x - PLAYER_RADIUS > 1) player.x -= PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_S) && player.y + PLAYER_RADIUS < WINDOW_HEIGHT - 1) player.y += PLAYER_SPEED * delta_time;
+        if (IsKeyDown(KEY_D) && player.x + PLAYER_RADIUS < WINDOW_WIDTH - 1) player.x += PLAYER_SPEED * delta_time;
 
         if (IsKeyPressed(KEY_G)) {
             proj_count = 0;
@@ -167,6 +175,14 @@ int main(int argc, char **argv) {
             shoot_projectile(player, GetMousePosition(), &proj_count);
         }
 
+        float wheel = GetMouseWheelMove();
+        if (wheel > 0) {
+            proj_speed += IsKeyDown(KEY_LEFT_CONTROL) ? 10 : 1;
+        } else if (wheel < 0) {
+            proj_speed -= IsKeyDown(KEY_LEFT_CONTROL) ? 10 : 1;
+        }
+        if (proj_speed < 0) proj_speed = 0;
+
         update_projectiles(delta_time, proj_count);
         check_coll(&proj_count, &obj_count_display);
         cleanup_projectiles(&proj_count);
@@ -175,24 +191,25 @@ int main(int argc, char **argv) {
             ClearBackground(BLACK);
 
             for (int i = 0; i < OBJ_COUNT; i++) {
-                if (objects[i].alive) DrawCircleV(objects[i].pos, OBJ_RADIUS, WHITE);
+                if (objects[i].alive) DrawCircleV(objects[i].pos, OBJ_RADIUS, GRAY);
             }
 
-            DrawCircleV(player, 7, PINK);
+            DrawCircleV(player, PLAYER_RADIUS, ORANGE);
 
             for (int i = 0; i < proj_count; i++) {
-                if (projectiles[i].alive) DrawCircleV(projectiles[i].pos, PROJ_RADIUS, RED);
+                if (projectiles[i].alive) DrawCircleV(projectiles[i].pos, PROJ_RADIUS, PINK);
             }
 
             DrawFPS(10, 10);
             DrawText(TextFormat("Proj count: %d", proj_count), 10, 30, 20, LIME);
-            DrawText(TextFormat("Obj count: %d", obj_count_display), 10, 50, 20, LIME);
+            DrawText(TextFormat("Proj speed: %d", proj_speed), 10, 50, 20, LIME);
+            DrawText(TextFormat("Obj count: %d", obj_count_display), 10, 70, 20, LIME);
 
         } EndDrawing();
     }
-
     free(projectiles);
     free(objects);
+
     CloseWindow();
     return 0;
 }
